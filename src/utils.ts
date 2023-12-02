@@ -2,13 +2,13 @@
  * @author linhuiw
  * @desc 工具方法
  */
-import * as path from 'path';
-import * as _ from 'lodash';
-import * as inquirer from 'inquirer';
-import * as fs from 'fs';
-import { pinyin } from 'pinyin-pro';
-import { PROJECT_CONFIG, KIWI_CONFIG_FILE } from './const';
-const colors = require('colors');
+import * as path from "path";
+import * as _ from "lodash";
+import * as inquirer from "inquirer";
+import * as fs from "fs";
+import { pinyin } from "pinyin-pro";
+import { PROJECT_CONFIG, KIWI_CONFIG_FILE } from "./const";
+const colors = require("colors");
 
 function lookForFiles(dir: string, fileName: string): string {
   const files = fs.readdirSync(dir);
@@ -17,7 +17,7 @@ function lookForFiles(dir: string, fileName: string): string {
     const currName = path.join(dir, file);
     const info = fs.statSync(currName);
     if (info.isDirectory()) {
-      if (file === '.git' || file === 'node_modules') {
+      if (file === ".git" || file === "node_modules") {
         continue;
       }
       const result = lookForFiles(currName, fileName);
@@ -36,12 +36,19 @@ function lookForFiles(dir: string, fileName: string): string {
 function getProjectConfig() {
   const configFile = path.resolve(process.cwd(), `./${KIWI_CONFIG_FILE}`);
   let obj = PROJECT_CONFIG.defaultConfig;
+  const BAIDUAPPID = process.env.BAIDUAPPID;
+  const BAIDUAPPKEY = process.env.BAIDUAPPKEY;
 
   if (configFile && fs.existsSync(configFile)) {
     obj = {
       ...obj,
-      ...JSON.parse(fs.readFileSync(configFile, 'utf8'))
+      ...JSON.parse(fs.readFileSync(configFile, "utf8"))
     };
+    obj.googleApiKey = process.env.GOOGLEAPIKEY || obj.googleApiKey;
+    obj.baiduApiKey =
+      BAIDUAPPID && BAIDUAPPKEY
+        ? { appId: BAIDUAPPID, appKey: BAIDUAPPKEY }
+        : obj.baiduApiKey;
   }
   return obj;
 }
@@ -72,9 +79,9 @@ function getLangDir(lang) {
 function traverse(obj, cb) {
   function traverseInner(obj, cb, path) {
     _.forEach(obj, (val, key) => {
-      if (typeof val === 'string') {
-        cb(val, [...path, key].join('.'));
-      } else if (typeof val === 'object' && val !== null) {
+      if (typeof val === "string") {
+        cb(val, [...path, key].join("."));
+      } else if (typeof val === "object" && val !== null) {
         traverseInner(val, cb, [...path, key]);
       }
     });
@@ -86,18 +93,23 @@ function traverse(obj, cb) {
 /**
  * 获取所有文案
  */
-function getAllMessages(lang: string, filter = (message: string, key: string) => true) {
+function getAllMessages(
+  lang: string,
+  filter = (message: string, key: string) => true
+) {
   const srcLangDir = getLangDir(lang);
   let files = fs.readdirSync(srcLangDir);
-  files = files.filter(file => file.endsWith('.ts') && file !== 'index.ts').map(file => path.resolve(srcLangDir, file));
+  files = files
+    .filter(file => file.endsWith(".ts") && file !== "index.ts")
+    .map(file => path.resolve(srcLangDir, file));
 
   const allMessages = files.map(file => {
     const { default: messages } = require(file);
-    const fileNameWithoutExt = path.basename(file).split('.')[0];
+    const fileNameWithoutExt = path.basename(file).split(".")[0];
     const flattenedMessages = {};
 
     traverse(messages, (message, path) => {
-      const key = fileNameWithoutExt + '.' + path;
+      const key = fileNameWithoutExt + "." + path;
       if (filter(message, key)) {
         flattenedMessages[key] = message;
       }
@@ -146,16 +158,24 @@ function withTimeout(promise, ms) {
 function translateText(text, toLang) {
   const CONFIG = getProjectConfig();
   const options = CONFIG.translateOptions;
-  const { translate: googleTranslate } = require('google-translate')(CONFIG.googleApiKey, options);
+  const { translate: googleTranslate } = require("google-translate")(
+    CONFIG.googleApiKey,
+    options
+  );
   return withTimeout(
     new Promise((resolve, reject) => {
-      googleTranslate(text, 'zh', CONFIG.langMap[toLang], (err, translation) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(translation.translatedText);
+      googleTranslate(
+        text,
+        "zh",
+        CONFIG.langMap[toLang],
+        (err, translation) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(translation.translatedText);
+          }
         }
-      });
+      );
     }),
     5000
   );
@@ -167,14 +187,19 @@ function translateText(text, toLang) {
 function translateKeyText(text: string, origin: string) {
   const CONFIG = getProjectConfig();
   const { appId, appKey } = CONFIG.baiduApiKey;
-  const baiduTranslate = require('baidu-translate');
+  const baiduTranslate = require("baidu-translate");
 
   function _translateText() {
     return withTimeout(
       new Promise((resolve, reject) => {
         // Baidu
-        if (origin === 'Baidu') {
-          baiduTranslate(appId, appKey, 'en', 'zh')(text)
+        if (origin === "Baidu") {
+          baiduTranslate(
+            appId,
+            appKey,
+            "en",
+            "zh"
+          )(text)
             .then(data => {
               if (data && data.trans_result) {
                 const result = data.trans_result.map(item => item.dst) || [];
@@ -186,9 +211,9 @@ function translateKeyText(text: string, origin: string) {
             });
         }
         // Pinyin
-        if (origin === 'Pinyin') {
-          const result = pinyin(text, { toneType: 'none' });
-          resolve(result.split('$'));
+        if (origin === "Pinyin") {
+          const result = pinyin(text, { toneType: "none" });
+          resolve(result.split("$"));
         }
       }),
       3000
@@ -217,16 +242,16 @@ function findMatchValue(langObj, key) {
  * @param obj 原始对象
  * @param prefix
  */
-function flatten(obj, prefix = '') {
-  var propName = prefix ? prefix + '.' : '',
+function flatten(obj, prefix = "") {
+  var propName = prefix ? prefix + "." : "",
     ret = {};
 
   for (var attribute in obj) {
-    var attr = attribute.replace(/-/g, '_');
+    var attr = attribute.replace(/-/g, "_");
     if (_.isArray(obj[attr])) {
       var len = obj[attr].length;
-      ret[attr] = obj[attr].join(',');
-    } else if (typeof obj[attr] === 'object') {
+      ret[attr] = obj[attr].join(",");
+    } else if (typeof obj[attr] === "object") {
       _.extend(ret, flatten(obj[attr], propName + attr));
     } else {
       ret[propName + attr] = obj[attr];
@@ -240,18 +265,18 @@ function flatten(obj, prefix = '') {
  */
 async function getTranslateOriginType() {
   const { googleApiKey, baiduApiKey } = getProjectConfig();
-  let translateType = ['Google', 'Baidu'];
+  let translateType = ["Google", "Baidu"];
   if (!googleApiKey) {
-    translateType = translateType.filter(item => item !== 'Google');
+    translateType = translateType.filter(item => item !== "Google");
   }
   if (!baiduApiKey || !baiduApiKey.appId || !baiduApiKey.appKey) {
-    translateType = translateType.filter(item => item !== 'Baidu');
+    translateType = translateType.filter(item => item !== "Baidu");
   }
   if (translateType.length === 0) {
-    console.log('请配置 googleApiKey 或 baiduApiKey ');
+    console.log("请配置 googleApiKey 或 baiduApiKey ");
     return {
       pass: false,
-      origin: ''
+      origin: ""
     };
   }
   if (translateType.length == 1) {
@@ -261,11 +286,11 @@ async function getTranslateOriginType() {
     };
   }
   const { origin } = await inquirer.prompt({
-    type: 'list',
-    name: 'origin',
-    message: '请选择使用的翻译源',
-    default: 'Google',
-    choices: ['Google', 'Baidu']
+    type: "list",
+    name: "origin",
+    message: "请选择使用的翻译源",
+    default: "Google",
+    choices: ["Google", "Baidu"]
   });
   return {
     pass: true,
@@ -277,14 +302,14 @@ async function getTranslateOriginType() {
  * 成功的提示
  */
 function successInfo(message: string) {
-  console.log('successInfo: ', colors.green(message));
+  console.log("successInfo: ", colors.green(message));
 }
 
 /**
  * 失败的提示
  */
 function failInfo(message: string) {
-  console.log('failInfo: ', colors.red(message));
+  console.log("failInfo: ", colors.red(message));
 }
 
 /**
