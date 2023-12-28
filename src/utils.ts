@@ -162,23 +162,19 @@ function translateText(text, toLang) {
     CONFIG.googleApiKey,
     options
   );
-  return withTimeout(
-    new Promise((resolve, reject) => {
-      googleTranslate(
-        text,
-        "zh",
-        CONFIG.langMap[toLang],
-        (err, translation) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(translation.translatedText);
-          }
-        }
-      );
-    }),
-    5000
-  );
+  // return withTimeout(
+  return new Promise((resolve, reject) => {
+    googleTranslate(text, "zh", CONFIG.langMap[toLang], (err, translation) => {
+      if (err) {
+        console.log(err);
+        resolve(text);
+      } else {
+        resolve(translation.translatedText);
+      }
+    });
+  });
+  // 10000
+  // );
 }
 
 /**

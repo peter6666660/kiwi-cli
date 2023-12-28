@@ -14,9 +14,9 @@ exports.googleTranslateTexts = exports.baiduTranslateTexts = exports.translate =
  * @author zongwenjian
  * @desc 全量翻译 translate命令
  */
-require('ts-node').register({
+require("ts-node").register({
     compilerOptions: {
-        module: 'commonjs'
+        module: "commonjs"
     }
 });
 const path = require("path");
@@ -35,7 +35,7 @@ const CONFIG = utils_1.getProjectConfig();
 function translateTextByBaidu(text, toLang) {
     const { baiduApiKey: { appId, appKey }, baiduLangMap } = CONFIG;
     return utils_1.withTimeout(new Promise((resolve, reject) => {
-        baiduTranslate(appId, appKey, baiduLangMap[toLang], 'zh')(text)
+        baiduTranslate(appId, appKey, baiduLangMap[toLang], "zh")(text)
             .then(data => {
             if (data && data.trans_result) {
                 resolve(data.trans_result);
@@ -56,8 +56,8 @@ function textToUpperCaseByFirstWord(text) {
             // {val} 变量小写
             .replace(/(\{.*?\})/g, text => `${text.charAt(0).toLowerCase()}${text.slice(1)}`)
             // 文案中的\n换行翻译前转换成了$n, 翻译后转换回来
-            .replace(/\$[nN]/g, '\n')
-        : '';
+            .replace(/\$[nN]/g, "\n")
+        : "";
 }
 /**
  * 使用google翻译所有待翻译的文案
@@ -66,18 +66,19 @@ function textToUpperCaseByFirstWord(text) {
  */
 function googleTranslateTexts(untranslatedTexts, toLang) {
     return __awaiter(this, void 0, void 0, function* () {
-        const translateAllTexts = Object.keys(untranslatedTexts).map(key => {
-            return utils_1.translateText(untranslatedTexts[key], toLang).then(translatedText => [key, translatedText]);
-        });
-        return new Promise(resolve => {
-            const result = {};
-            Promise.all(translateAllTexts).then(res => {
-                res.forEach(([key, translatedText]) => {
+        const result = {};
+        const untranslatedKeys = Object.keys(untranslatedTexts);
+        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+            if (untranslatedKeys.length > 0) {
+                for (var i = 0; i < untranslatedKeys.length; i++) {
+                    const key = untranslatedKeys[i];
+                    const translatedText = yield utils_1.translateText(untranslatedTexts[key], toLang);
+                    console.log(key, ":", translatedText, " + tolang:", toLang);
                     result[key] = translatedText;
-                });
-                resolve(result);
-            });
-        });
+                }
+            }
+            resolve(result);
+        }));
     });
 }
 exports.googleTranslateTexts = googleTranslateTexts;
@@ -95,8 +96,8 @@ function baiduTranslateTexts(untranslatedTexts, toLang) {
             let lastIndex = 0;
             // 由于百度api单词翻译字符长度限制，需要将待翻译的文案拆分成单个子任务
             untranslatedKeys.reduce((pre, next, index) => {
-                const value = untranslatedTexts[next].replace(/\n/g, '$n');
-                const byteLen = Buffer.byteLength(pre, 'utf8');
+                const value = untranslatedTexts[next].replace(/\n/g, "$n");
+                const byteLen = Buffer.byteLength(pre, "utf8");
                 if (byteLen > 5500) {
                     // 获取翻译字节数，大于5500放到单独任务里面处理
                     taskLists[lastIndex] = () => {
@@ -119,7 +120,7 @@ function baiduTranslateTexts(untranslatedTexts, toLang) {
                     };
                 }
                 return `${pre}\n${value}`;
-            }, '');
+            }, "");
             // 由于百度api调用QPS只有1, 考虑网络延迟 每1.5s请求一个子任务
             const taskKeys = Object.keys(taskLists);
             if (taskKeys.length > 0) {
@@ -146,7 +147,7 @@ function runTranslateApi(dstLang, origin) {
     return __awaiter(this, void 0, void 0, function* () {
         const untranslatedTexts = mock_1.getAllUntranslatedTexts(dstLang);
         let mocks = {};
-        if (origin === 'Google') {
+        if (origin === "Google") {
             mocks = yield googleTranslateTexts(untranslatedTexts, dstLang);
         }
         else {
@@ -181,7 +182,7 @@ function runTranslateApi(dstLang, origin) {
 function translate(origin) {
     return __awaiter(this, void 0, void 0, function* () {
         const langs = CONFIG.distLangs;
-        if (origin === 'Google') {
+        if (origin === "Google") {
             const mockPromise = langs.map(lang => {
                 return runTranslateApi(lang, origin);
             });

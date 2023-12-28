@@ -2,18 +2,23 @@
  * @author zongwenjian
  * @desc 全量翻译 translate命令
  */
-require('ts-node').register({
+require("ts-node").register({
   compilerOptions: {
-    module: 'commonjs'
+    module: "commonjs"
   }
 });
-import * as path from 'path';
-import * as fs from 'fs';
-import * as baiduTranslate from 'baidu-translate';
-import { tsvFormatRows } from 'd3-dsv';
-import { getProjectConfig, getLangDir, withTimeout, translateText } from './utils';
-import { importMessages } from './import';
-import { getAllUntranslatedTexts } from './mock';
+import * as path from "path";
+import * as fs from "fs";
+import * as baiduTranslate from "baidu-translate";
+import { tsvFormatRows } from "d3-dsv";
+import {
+  getProjectConfig,
+  getLangDir,
+  withTimeout,
+  translateText
+} from "./utils";
+import { importMessages } from "./import";
+import { getAllUntranslatedTexts } from "./mock";
 
 const CONFIG = getProjectConfig();
 
@@ -29,12 +34,19 @@ function translateTextByBaidu(text, toLang) {
   } = CONFIG;
   return withTimeout(
     new Promise((resolve, reject) => {
-      baiduTranslate(appId, appKey, baiduLangMap[toLang], 'zh')(text)
+      baiduTranslate(
+        appId,
+        appKey,
+        baiduLangMap[toLang],
+        "zh"
+      )(text)
         .then(data => {
           if (data && data.trans_result) {
             resolve(data.trans_result);
           } else {
-            reject(`\n百度翻译api调用异常 error_code: ${data.error_code}, error_msg: ${data.error_msg}`);
+            reject(
+              `\n百度翻译api调用异常 error_code: ${data.error_code}, error_msg: ${data.error_msg}`
+            );
           }
         })
         .catch(err => {
@@ -50,10 +62,13 @@ function textToUpperCaseByFirstWord(text) {
   return text
     ? `${text.charAt(0).toUpperCase()}${text.slice(1)}`
         // {val} 变量小写
-        .replace(/(\{.*?\})/g, text => `${text.charAt(0).toLowerCase()}${text.slice(1)}`)
+        .replace(
+          /(\{.*?\})/g,
+          text => `${text.charAt(0).toLowerCase()}${text.slice(1)}`
+        )
         // 文案中的\n换行翻译前转换成了$n, 翻译后转换回来
-        .replace(/\$[nN]/g, '\n')
-    : '';
+        .replace(/\$[nN]/g, "\n")
+    : "";
 }
 
 /**
@@ -62,17 +77,21 @@ function textToUpperCaseByFirstWord(text) {
  * @param toLang 目标语种
  */
 async function googleTranslateTexts(untranslatedTexts, toLang) {
-  const translateAllTexts = Object.keys(untranslatedTexts).map(key => {
-    return translateText(untranslatedTexts[key], toLang).then(translatedText => [key, translatedText]);
-  });
-  return new Promise(resolve => {
-    const result = {};
-    Promise.all(translateAllTexts).then(res => {
-      res.forEach(([key, translatedText]) => {
+  const result = {};
+  const untranslatedKeys = Object.keys(untranslatedTexts);
+  return new Promise(async resolve => {
+    if (untranslatedKeys.length > 0) {
+      for (var i = 0; i < untranslatedKeys.length; i++) {
+        const key = untranslatedKeys[i];
+        const translatedText = await translateText(
+          untranslatedTexts[key],
+          toLang
+        );
+        console.log(key, ":", translatedText, " + tolang:", toLang);
         result[key] = translatedText;
-      });
-      resolve(result);
-    });
+      }
+    }
+    resolve(result);
   });
 }
 
@@ -89,8 +108,8 @@ async function baiduTranslateTexts(untranslatedTexts, toLang) {
     let lastIndex = 0;
     // 由于百度api单词翻译字符长度限制，需要将待翻译的文案拆分成单个子任务
     untranslatedKeys.reduce((pre, next, index) => {
-      const value = untranslatedTexts[next].replace(/\n/g, '$n');
-      const byteLen = Buffer.byteLength(pre, 'utf8');
+      const value = untranslatedTexts[next].replace(/\n/g, "$n");
+      const byteLen = Buffer.byteLength(pre, "utf8");
       if (byteLen > 5500) {
         // 获取翻译字节数，大于5500放到单独任务里面处理
         taskLists[lastIndex] = () => {
@@ -112,7 +131,7 @@ async function baiduTranslateTexts(untranslatedTexts, toLang) {
         };
       }
       return `${pre}\n${value}`;
-    }, '');
+    }, "");
 
     // 由于百度api调用QPS只有1, 考虑网络延迟 每1.5s请求一个子任务
     const taskKeys = Object.keys(taskLists);
@@ -139,7 +158,7 @@ async function baiduTranslateTexts(untranslatedTexts, toLang) {
 async function runTranslateApi(dstLang: string, origin: string) {
   const untranslatedTexts = getAllUntranslatedTexts(dstLang);
   let mocks = {};
-  if (origin === 'Google') {
+  if (origin === "Google") {
     mocks = await googleTranslateTexts(untranslatedTexts, dstLang);
   } else {
     mocks = await baiduTranslateTexts(untranslatedTexts, dstLang);
@@ -152,7 +171,10 @@ async function runTranslateApi(dstLang: string, origin: string) {
   const content = tsvFormatRows(messagesToTranslate);
   // 输出tsv文件
   return new Promise((resolve, reject) => {
-    const filePath = path.resolve(getLangDir(dstLang), `${dstLang}_translate.tsv`);
+    const filePath = path.resolve(
+      getLangDir(dstLang),
+      `${dstLang}_translate.tsv`
+    );
     fs.writeFile(filePath, content, err => {
       if (err) {
         reject(err);
@@ -172,7 +194,7 @@ async function runTranslateApi(dstLang: string, origin: string) {
  */
 async function translate(origin: string) {
   const langs = CONFIG.distLangs;
-  if (origin === 'Google') {
+  if (origin === "Google") {
     const mockPromise = langs.map(lang => {
       return runTranslateApi(lang, origin);
     });

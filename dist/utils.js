@@ -159,16 +159,20 @@ function translateText(text, toLang) {
     const CONFIG = getProjectConfig();
     const options = CONFIG.translateOptions;
     const { translate: googleTranslate } = require("google-translate")(CONFIG.googleApiKey, options);
-    return withTimeout(new Promise((resolve, reject) => {
+    // return withTimeout(
+    return new Promise((resolve, reject) => {
         googleTranslate(text, "zh", CONFIG.langMap[toLang], (err, translation) => {
             if (err) {
-                reject(err);
+                console.log(err);
+                resolve(text);
             }
             else {
                 resolve(translation.translatedText);
             }
         });
-    }), 5000);
+    });
+    // 10000
+    // );
 }
 exports.translateText = translateText;
 /**

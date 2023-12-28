@@ -4,7 +4,7 @@ Kiwi 的 CLI 工具
 
 ## 如何使用
 
-> yarn global add kiwi-clis
+> yarn global add  @welcoin/kiwi-clis@1.1.8
 
 > 推荐与[🐤 Kiwi-国际化全流程解决方案](https://github.com/alibaba/kiwi)结合使用
 
