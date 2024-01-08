@@ -2,7 +2,7 @@
 
 Kiwi Cli
 
-## 1.1.9 (2024-1-08)
+## 1.1.10 (2024-1-08)
 - 支持diff 导出 --export_diff
 - 支持全部文案导出 ｜ 过滤中文导出 -export_all
 - 支持tsv指定语言导出 --export_tsv

@@ -73,7 +73,6 @@ function exportTsv(prefix, ...other) {
     });
     const tsvVlaues = Object.keys(langs[0]).map(k => {
         const langValues = other.map((_lang, i) => {
-            console.log(`langs[i]`, langs[i]);
             return langs[i][k];
         });
         return [k, ...langValues];

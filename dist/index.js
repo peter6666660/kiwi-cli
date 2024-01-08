@@ -41,7 +41,7 @@ function spining(text, callback) {
     }
 }
 commander
-    .version("1.1.9")
+    .version("1.1.10")
     .option("--init [type]", "初始化项目")
     .option("--import [file] [lang]", "导入翻译文案")
     .option("--export [file] [lang]", "导出未翻译的文案")
