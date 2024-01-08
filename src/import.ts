@@ -2,20 +2,20 @@
  * @author linhuiw
  * @desc 导入翻译文件
  */
-require('ts-node').register({
+require("ts-node").register({
   compilerOptions: {
-    module: 'commonjs'
+    module: "commonjs"
   }
 });
-import * as fs from 'fs';
-import * as path from 'path';
-import * as _ from 'lodash';
-import { tsvParseRows } from 'd3-dsv';
-import { getAllMessages, getProjectConfig, traverse } from './utils';
+import * as fs from "fs";
+import * as path from "path";
+import * as _ from "lodash";
+import { tsvParseRows } from "d3-dsv";
+import { getAllMessages, getProjectConfig, traverse } from "./utils";
 
 const CONFIG = getProjectConfig();
 
-function getMessagesToImport(file: string) {
+export function getMessagesToImport(file: string) {
   const content = fs.readFileSync(file).toString();
   const messages = tsvParseRows(content, ([key, value]) => {
     try {
@@ -37,7 +37,8 @@ function getMessagesToImport(file: string) {
     rst[key] = value;
   });
   if (duplicateKeys.size > 0) {
-    const errorMessage = 'Duplicate messages detected: \n' + [...duplicateKeys].join('\n');
+    const errorMessage =
+      "Duplicate messages detected: \n" + [...duplicateKeys].join("\n");
     console.error(errorMessage);
     process.exit(1);
   }
@@ -46,25 +47,44 @@ function getMessagesToImport(file: string) {
 
 function writeMessagesToFile(messages: any, file: string, lang: string) {
   const kiwiDir = CONFIG.kiwiDir;
-  const srcMessages = require(path.resolve(kiwiDir, CONFIG.srcLang, file)).default;
+  const srcMessages = require(path.resolve(kiwiDir, CONFIG.srcLang, file))
+    .default;
   const dstFile = path.resolve(kiwiDir, lang, file);
   const oldDstMessages = require(dstFile).default;
   const rst = {};
   traverse(srcMessages, (message, key) => {
-    _.setWith(rst, key, _.get(messages, key) || _.get(oldDstMessages, key), Object);
+    _.setWith(
+      rst,
+      key,
+      _.get(messages, key) || _.get(oldDstMessages, key),
+      Object
+    );
   });
-  fs.writeFileSync(dstFile + '.ts', 'export default ' + JSON.stringify(rst, null, 2));
+  fs.writeFileSync(
+    dstFile + ".ts",
+    "export default " + JSON.stringify(rst, null, 2)
+  );
 }
 
 function importMessages(file: string, lang: string) {
   let messagesToImport = getMessagesToImport(file);
   const allMessages = getAllMessages(CONFIG.srcLang);
-  messagesToImport = _.pickBy(messagesToImport, (message, key) => allMessages.hasOwnProperty(key));
-  const keysByFiles = _.groupBy(Object.keys(messagesToImport), key => key.split('.')[0]);
+  messagesToImport = _.pickBy(messagesToImport, (message, key) =>
+    allMessages.hasOwnProperty(key)
+  );
+  const keysByFiles = _.groupBy(
+    Object.keys(messagesToImport),
+    key => key.split(".")[0]
+  );
   const messagesByFiles = _.mapValues(keysByFiles, (keys, file) => {
     const rst = {};
     _.forEach(keys, key => {
-      _.setWith(rst, key.substr(file.length + 1), messagesToImport[key], Object);
+      _.setWith(
+        rst,
+        key.substr(file.length + 1),
+        messagesToImport[key],
+        Object
+      );
     });
     return rst;
   });

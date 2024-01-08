@@ -1,13 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.importMessages = void 0;
+exports.importMessages = exports.getMessagesToImport = void 0;
 /**
  * @author linhuiw
  * @desc 导入翻译文件
  */
-require('ts-node').register({
+require("ts-node").register({
     compilerOptions: {
-        module: 'commonjs'
+        module: "commonjs"
     }
 });
 const fs = require("fs");
@@ -39,28 +39,30 @@ function getMessagesToImport(file) {
         rst[key] = value;
     });
     if (duplicateKeys.size > 0) {
-        const errorMessage = 'Duplicate messages detected: \n' + [...duplicateKeys].join('\n');
+        const errorMessage = "Duplicate messages detected: \n" + [...duplicateKeys].join("\n");
         console.error(errorMessage);
         process.exit(1);
     }
     return rst;
 }
+exports.getMessagesToImport = getMessagesToImport;
 function writeMessagesToFile(messages, file, lang) {
     const kiwiDir = CONFIG.kiwiDir;
-    const srcMessages = require(path.resolve(kiwiDir, CONFIG.srcLang, file)).default;
+    const srcMessages = require(path.resolve(kiwiDir, CONFIG.srcLang, file))
+        .default;
     const dstFile = path.resolve(kiwiDir, lang, file);
     const oldDstMessages = require(dstFile).default;
     const rst = {};
     utils_1.traverse(srcMessages, (message, key) => {
         _.setWith(rst, key, _.get(messages, key) || _.get(oldDstMessages, key), Object);
     });
-    fs.writeFileSync(dstFile + '.ts', 'export default ' + JSON.stringify(rst, null, 2));
+    fs.writeFileSync(dstFile + ".ts", "export default " + JSON.stringify(rst, null, 2));
 }
 function importMessages(file, lang) {
     let messagesToImport = getMessagesToImport(file);
     const allMessages = utils_1.getAllMessages(CONFIG.srcLang);
     messagesToImport = _.pickBy(messagesToImport, (message, key) => allMessages.hasOwnProperty(key));
-    const keysByFiles = _.groupBy(Object.keys(messagesToImport), key => key.split('.')[0]);
+    const keysByFiles = _.groupBy(Object.keys(messagesToImport), key => key.split(".")[0]);
     const messagesByFiles = _.mapValues(keysByFiles, (keys, file) => {
         const rst = {};
         _.forEach(keys, key => {

@@ -16,6 +16,7 @@ const lodash_1 = require("lodash");
 const init_1 = require("./init");
 const sync_1 = require("./sync");
 const export_1 = require("./export");
+const export_all_1 = require("./export_all");
 const import_1 = require("./import");
 const unused_1 = require("./unused");
 const mock_1 = require("./mock");
@@ -40,10 +41,13 @@ function spining(text, callback) {
     }
 }
 commander
-    .version("1.1.8")
+    .version("1.1.9")
     .option("--init [type]", "初始化项目")
     .option("--import [file] [lang]", "导入翻译文案")
     .option("--export [file] [lang]", "导出未翻译的文案")
+    .option("--export_diff [diffPrefixName]", "导出未确认的文案[diffPrefixName = prev]")
+    .option("--export_all [haveCN] [prefix]", "导出全部的文案")
+    .option("--export_tsv [prefix] [lang...]", "导出全部的文案")
     .option("--sync", "同步各种语言的文案")
     .option("--mock", "使用 Google 或者 Baidu 翻译 输出mock文件")
     .option("--translate", "使用 Google 或者 Baidu 翻译 翻译结果自动替换目标语种文案")
@@ -113,6 +117,29 @@ if (commander.export) {
         else if (commander.args) {
             export_1.exportMessages(commander.export, commander.args[0]);
         }
+    });
+}
+if (commander.export_diff) {
+    spining("导出未翻译的文案", () => {
+        console.log("diff表格前缀名字, 默认prev");
+        export_1.exportDiffMessages(commander.args[0] || "prev");
+    });
+}
+if (commander.export_all) {
+    spining("导出全部文案", () => {
+        if (commander.export_all === true && commander.args.length === 0) {
+            export_all_1.exportAllMessage();
+        }
+        else if (commander.args) {
+            // 导出不含中文的语言  kiwi --export_all false prev
+            // 导出包含中文的语言  kiwi --export_all true prev
+            export_all_1.exportAllMessage(commander.export_all, commander.args[0]);
+        }
+    });
+}
+if (commander.export_tsv) {
+    spining("导出文案到一个表格", () => {
+        export_all_1.exportTsv(commander.export_tsv, ...commander.args);
     });
 }
 if (commander.sync) {

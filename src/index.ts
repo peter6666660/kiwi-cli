@@ -5,7 +5,8 @@ import * as inquirer from "inquirer";
 import { isString } from "lodash";
 import { initProject } from "./init";
 import { sync } from "./sync";
-import { exportMessages } from "./export";
+import { exportMessages, exportDiffMessages } from "./export";
+import { exportAllMessage, exportTsv } from "./export_all";
 import { importMessages } from "./import";
 import { findUnUsed } from "./unused";
 import { mockLangs } from "./mock";
@@ -31,10 +32,16 @@ function spining(text, callback) {
 }
 
 commander
-  .version("1.1.8")
+  .version("1.1.9")
   .option("--init [type]", "初始化项目")
   .option("--import [file] [lang]", "导入翻译文案")
   .option("--export [file] [lang]", "导出未翻译的文案")
+  .option(
+    "--export_diff [diffPrefixName]",
+    "导出未确认的文案[diffPrefixName = prev]"
+  )
+  .option("--export_all [haveCN] [prefix]", "导出全部的文案")
+  .option("--export_tsv [prefix] [lang...]", "导出全部的文案")
   .option("--sync", "同步各种语言的文案")
   .option("--mock", "使用 Google 或者 Baidu 翻译 输出mock文件")
   .option(
@@ -107,6 +114,28 @@ if (commander.export) {
   });
 }
 
+if (commander.export_diff) {
+  spining("导出未翻译的文案", () => {
+    console.log("diff表格前缀名字, 默认prev");
+    exportDiffMessages(commander.args[0] || "prev");
+  });
+}
+if (commander.export_all) {
+  spining("导出全部文案", () => {
+    if (commander.export_all === true && commander.args.length === 0) {
+      exportAllMessage();
+    } else if (commander.args) {
+      // 导出不含中文的语言  kiwi --export_all false prev
+      // 导出包含中文的语言  kiwi --export_all true prev
+      exportAllMessage(commander.export_all, commander.args[0]);
+    }
+  });
+}
+if (commander.export_tsv) {
+  spining("导出文案到一个表格", () => {
+    exportTsv(commander.export_tsv, ...commander.args);
+  });
+}
 if (commander.sync) {
   spining("文案同步", () => {
     sync();
